@@ -2,6 +2,18 @@
 
 Read `AGENTS.md`, `WORKFLOW.md`, and `docs/PROJECT_OVERVIEW.md` before changing code.
 
+## Collaboration Rule
+
+After the `0.0.2` release, future non-trivial requests must follow
+`需求 -> BDD -> TDD / 验证计划 -> 实现 -> 验收 -> 发布归档`.
+
+Do not jump straight into implementation for changes that affect behavior,
+data contracts, credentials, refresh timing, release/update behavior, or
+visible multi-state UI. First clarify the requirement, write or update a BDD
+scenario, and define the test or verification plan. Small copy, spacing, and
+asset-only edits may use the lightweight path, but still require explicit
+verification before completion.
+
 ## Current Product
 
 SuperAgentIsland is an internal macOS SwiftUI accessory app for:

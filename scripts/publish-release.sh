@@ -33,6 +33,13 @@ if [[ ! -f "$APPCAST" ]]; then
 fi
 
 git push -u origin main
+
+if git rev-parse "$TAG" >/dev/null 2>&1; then
+  echo "✓ tag ${TAG} already exists locally"
+else
+  git tag -a "$TAG" -m "SuperAgentIsland ${VERSION}"
+fi
+
 git push origin "$TAG"
 
 if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
