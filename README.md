@@ -14,13 +14,17 @@ SuperAgentIsland 是一个 macOS 菜单栏岛屿应用，用来查看内部 Supe
 
 ## 界面截图
 
-### 岛屿概览
+### 缩小状态
 
-![SuperAgentIsland 岛屿概览](docs/images/island-overview.svg)
+![SuperAgentIsland 缩小状态](docs/images/island-compact.png)
+
+### 展开面板
+
+![SuperAgentIsland 展开面板](docs/images/island-expanded.png)
 
 ### 设置面板
 
-![SuperAgentIsland 设置面板](docs/images/settings-general.svg)
+![SuperAgentIsland 设置面板](docs/images/settings-general.png)
 
 ## 安装
 
