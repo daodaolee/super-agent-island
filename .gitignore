@@ -1,0 +1,36 @@
+build/
+dist/
+.DS_Store
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+.build/
+node_modules/
+*.xcodeproj/
+*.xcworkspace/
+xcuserdata/
+.swiftpm/
+.superpowers/
+
+# Marketing landing page lives in its own git repo.
+landing/
+landing.zip
+
+# Sparkle framework + tools — fetched on demand by scripts/setup-sparkle.sh.
+Vendor/
+.gstack/
+
+# Local release-time secret injection. Keep real credentials out of git; build.sh
+# reads this file and embeds its values into the packaged app.
+.release-secrets.env
+
+# QA / browse / playwright tooling artifacts.
+.playwright-mcp/
+/codexisland-*.png
+
+# Launch-video / marketing assets live in their own working dir.
+marketing/
+
+# Maintainer-only notes (launch playbooks, analytics ops, internal dashboards).
+# See CLAUDE.md → "docs/ vs notes/" for what belongs here vs in public docs/.
+notes/
