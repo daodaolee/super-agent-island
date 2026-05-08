@@ -3,6 +3,16 @@
 User-facing changes per release. Dates are when the version is prepared for
 release.
 
+## [0.0.2] - 2026-05-08
+
+### Fixed
+
+- Fixed the `全部` SuperAgent usage range so trend data is queried in
+  31-day day-granularity chunks and merged, instead of failing on the
+  backend's `day granularity supports up to 31 days` limit.
+- Kept the model ranking panel on the same full-range `summary.byModel`
+  snapshot so the first and second panels share one standard data scope.
+
 ## [0.0.1] - 2026-05-08
 
 Initial SuperAgentIsland release.
