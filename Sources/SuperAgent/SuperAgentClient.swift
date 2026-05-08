@@ -155,12 +155,7 @@ struct SuperAgentClient {
         let trend: [SuperAgentTrendItem]
         if range == .all {
             if let dataRange = summary.dataRange {
-                trend = try await requestTrend(
-                    start: dataRange.minDate,
-                    end: dataRange.maxDate,
-                    granularity: Self.granularity(for: dataRange),
-                    timezone: timezone
-                )
+                trend = try await requestAllTrend(dataRange: dataRange, timezone: timezone)
             } else {
                 trend = []
             }
@@ -237,6 +232,24 @@ struct SuperAgentClient {
         } ?? []
     }
 
+    private func requestAllTrend(dataRange: SuperAgentDataRange, timezone: String) async throws -> [SuperAgentTrendItem] {
+        let chunks = Self.dayChunks(for: dataRange)
+        guard !chunks.isEmpty else { return [] }
+
+        var items: [SuperAgentTrendItem] = []
+        items.reserveCapacity(chunks.count * 31)
+        for chunk in chunks {
+            let chunkItems = try await requestTrend(
+                start: chunk.start,
+                end: chunk.end,
+                granularity: "day",
+                timezone: timezone
+            )
+            items.append(contentsOf: chunkItems)
+        }
+        return items
+    }
+
     private func requestAPI<T: Decodable>(_ path: String) async throws -> T {
         guard let url = URL(string: "\(superAgentBase.absoluteString)/api/v1/\(path)") else {
             throw SuperAgentClientError.apiFailed("API 地址无效。")
@@ -299,13 +312,27 @@ struct SuperAgentClient {
         return fractional.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 
-    private static func granularity(for dataRange: SuperAgentDataRange) -> String {
+    private static func dayChunks(for dataRange: SuperAgentDataRange) -> [(start: String, end: String)] {
         guard let start = Self.dayDateFormatter.date(from: dataRange.minDate),
               let end = Self.dayDateFormatter.date(from: dataRange.maxDate)
-        else { return "day" }
-        let days = Calendar(identifier: .gregorian).dateComponents([.day], from: start, to: end).day ?? 0
-        if days > 180 { return "month" }
-        return "day"
+        else { return [] }
+
+        let calendar = Calendar(identifier: .gregorian)
+        var chunks: [(start: String, end: String)] = []
+        var cursor = start
+        while cursor <= end {
+            let maxChunkEnd = calendar.date(byAdding: .day, value: 30, to: cursor) ?? cursor
+            let chunkEnd = min(maxChunkEnd, end)
+            chunks.append((
+                start: Self.dayDateFormatter.string(from: cursor),
+                end: Self.dayDateFormatter.string(from: chunkEnd)
+            ))
+            guard let next = calendar.date(byAdding: .day, value: 1, to: chunkEnd), next > cursor else {
+                break
+            }
+            cursor = next
+        }
+        return chunks
     }
 
     private static let dayDateFormatter: DateFormatter = {
