@@ -72,16 +72,16 @@
 
       .liquid-band {
         position: absolute;
-        inset: -120px 50% auto 50%;
+        inset: -156px 50% auto 50%;
         width: 100vw;
-        height: 420px;
+        height: 500px;
         margin-left: -50vw;
         pointer-events: none;
         overflow: hidden;
-        opacity: 0.82;
-        filter: blur(18px) saturate(1.12);
-        -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.72) 45%, transparent 100%);
-        mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.72) 45%, transparent 100%);
+        opacity: 0.62;
+        filter: blur(30px) saturate(1.08);
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.64) 42%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.64) 42%, transparent 100%);
       }
 
       .liquid-band::before,
@@ -90,16 +90,16 @@
         position: absolute;
         inset: 0;
         background:
-          radial-gradient(340px 170px at 20% 34%, rgba(255, 87, 87, 0.72), transparent 70%),
-          radial-gradient(460px 180px at 52% 16%, rgba(161, 19, 26, 0.66), transparent 72%),
-          radial-gradient(380px 150px at 78% 30%, rgba(255, 97, 97, 0.48), transparent 72%);
-        transform: skewX(-18deg);
+          radial-gradient(420px 190px at 16% 34%, rgba(255, 87, 87, 0.5), transparent 72%),
+          radial-gradient(560px 210px at 52% 18%, rgba(161, 19, 26, 0.46), transparent 74%),
+          radial-gradient(430px 170px at 84% 32%, rgba(255, 97, 97, 0.32), transparent 74%);
+        transform: skewX(-16deg);
         animation: liquid-flow 13s ease-in-out infinite alternate;
       }
 
       .liquid-band::after {
         opacity: 0.48;
-        transform: skewX(-22deg) translateX(-8vw);
+        transform: skewX(-20deg) translateX(-8vw);
         animation-duration: 17s;
         animation-direction: alternate-reverse;
       }
@@ -205,7 +205,7 @@
       .hero {
         position: relative;
         z-index: 1;
-        padding: 104px 0 72px;
+        padding: 96px 0 72px;
       }
 
       .hero-copy {
@@ -277,58 +277,48 @@
 
       .stage {
         position: relative;
-        width: min(940px, 100%);
-        height: 390px;
-        margin: 46px auto 0;
+        width: min(1160px, 100%);
+        margin: 50px auto 0;
       }
 
-      .real-island {
-        position: absolute;
-        left: 50%;
-        top: 26px;
-        width: min(760px, calc(100vw - 72px));
-        transform: translateX(-50%);
-        animation: hero-float 7s ease-in-out infinite;
-      }
-
-      .real-island::before {
-        content: "";
-        position: absolute;
-        left: 14%;
-        right: 14%;
-        bottom: -62px;
-        height: 126px;
-        border-radius: 9999px;
-        background:
-          radial-gradient(ellipse at 50% 28%, rgba(255, 255, 255, 0.42), transparent 12%),
-          radial-gradient(ellipse at 50% 55%, rgba(87, 193, 255, 0.92), rgba(19, 95, 255, 0.32) 52%, transparent 76%);
-        filter: blur(24px);
-        opacity: 0.9;
-        animation: liquid-blue 5.4s ease-in-out infinite;
-      }
-
-      .real-island img {
+      .video-frame {
         position: relative;
-        width: 100%;
-        border-radius: 0 0 44px 44px;
-      }
-
-      .expanded-preview {
-        position: absolute;
-        left: 50%;
-        top: 78px;
-        width: min(900px, calc(100vw - 72px));
+        overflow: hidden;
         border: 1px solid var(--hairline);
         border-radius: var(--rounded-xl);
         background: var(--surface);
-        overflow: hidden;
-        opacity: 0.98;
-        transform: translateX(-50%) translateY(0) scale(1);
-        animation: preview-float 8s ease-in-out infinite;
+        contain: paint;
       }
 
-      .expanded-preview img {
+      .video-frame::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        border-radius: inherit;
+        padding: 1px;
+        background: linear-gradient(112deg, rgba(87, 193, 255, 0.26), transparent 30%, rgba(255, 97, 97, 0.2) 74%, transparent);
+        -webkit-mask: linear-gradient(#000, #000) content-box, linear-gradient(#000, #000);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+      }
+
+      .video-frame::after {
+        content: "";
+        position: absolute;
+        inset: auto 12% -56px;
+        height: 110px;
+        border-radius: 9999px;
+        background: radial-gradient(ellipse at 50% 50%, rgba(87, 193, 255, 0.28), transparent 68%);
+        filter: blur(22px);
+        pointer-events: none;
+      }
+
+      .video-frame video {
+        display: block;
         width: 100%;
+        background: var(--canvas);
       }
 
       .section {
@@ -500,35 +490,10 @@
 
       @keyframes liquid-flow {
         from {
-          transform: skewX(-18deg) translate3d(-6vw, 0, 0) scale(1);
+          transform: skewX(-16deg) translate3d(-6vw, 0, 0) scale(1);
         }
         to {
-          transform: skewX(-18deg) translate3d(7vw, 16px, 0) scale(1.08);
-        }
-      }
-
-      @keyframes liquid-blue {
-        0%, 100% {
-          transform: scaleX(0.96) translateY(0);
-          opacity: 0.72;
-        }
-        50% {
-          transform: scaleX(1.12) translateY(-6px);
-          opacity: 0.95;
-        }
-      }
-
-      @keyframes hero-float {
-        0%, 100% { transform: translateX(-50%) translateY(0); }
-        50% { transform: translateX(-50%) translateY(-7px); }
-      }
-
-      @keyframes preview-float {
-        0%, 100% {
-          transform: translateX(-50%) translateY(0) scale(1);
-        }
-        50% {
-          transform: translateX(-50%) translateY(8px) scale(0.995);
+          transform: skewX(-16deg) translate3d(7vw, 16px, 0) scale(1.08);
         }
       }
 
@@ -570,8 +535,6 @@
           grid-template-columns: 1fr;
           flex-direction: column;
         }
-
-        .stage { height: 480px; }
       }
 
       @media (max-width: 760px) {
@@ -596,9 +559,6 @@
         .button {
           width: 100%;
         }
-
-        .stage { height: 360px; }
-
         .footer-links {
           flex-wrap: wrap;
         }
@@ -644,12 +604,11 @@
             </div>
           </div>
 
-          <div class="stage" aria-label="SuperAgentIsland 动态演示">
-            <div class="real-island">
-              <img src="images/island-compact.png" alt="SuperAgentIsland 收起状态，两个圆环指标" />
-            </div>
-            <div class="expanded-preview">
-              <img src="images/island-expanded.png" alt="SuperAgentIsland 展开后的用量面板" />
+          <div class="stage" aria-label="SuperAgentIsland 演示视频">
+            <div class="video-frame">
+              <video autoplay muted loop playsinline preload="metadata" poster="images/island-expanded.png">
+                <source src="media/superagentisland-demo.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
