@@ -1,6 +1,6 @@
 # SuperAgentIsland AI Handoff
 
-Read `AGENTS.md` and `docs/PROJECT_OVERVIEW.md` before changing code.
+Read `AGENTS.md`, `WORKFLOW.md`, and `docs/PROJECT_OVERVIEW.md` before changing code.
 
 ## Current Product
 
@@ -55,6 +55,12 @@ To publish an update, create a GitHub Release with tag `v<version>` and upload t
 gh release create v$(cat VERSION) dist/SuperAgentIsland-$(cat VERSION).dmg dist/appcast.xml --notes "SuperAgentIsland $(cat VERSION)"
 ```
 
+Preferred local publish command after `gh auth login`:
+
+```bash
+CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./scripts/publish-release.sh
+```
+
 Default release page:
 
 ```text
@@ -63,8 +69,10 @@ https://github.com/daodaolee/super-agent-island/releases
 
 ## Safety Notes
 
-- SuperAgent and GAC passwords are intentionally embedded or stored in memory, not Keychain.
+- SuperAgent and GAC passwords are injected at build time from `~/.super-agent-island/release-secrets.env`; do not commit real credentials.
 - GAC tokens are process-memory only to avoid repeated Keychain prompts.
 - `RefreshIntervalStore` controls SuperAgent and GAC auto-refresh timers.
 - Default refresh interval is 30 minutes.
 - Do not casually rotate Sparkle signing keys; existing installs trust the embedded public key.
+- Before claiming completion, run `CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./build.sh`.
+- Before release, run `CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./release.sh` and check `acceptance/checklist.md`.

@@ -1,64 +1,126 @@
 # SuperAgentIsland
 
-SuperAgentIsland is a native macOS menu-bar island for internal SuperAgent usage monitoring.
+SuperAgentIsland 是一个 macOS 菜单栏岛屿应用，用来查看内部 SuperAgent 用量和 GAC 积分状态。应用常驻在 MacBook 刘海 / 菜单栏附近，缩小时展示两个关键百分比，悬停和点击后展开完整面板。
 
-It shows:
+> 本项目基于 [ericjypark/codex-island](https://github.com/ericjypark/codex-island) 做内部场景改造；当前仓库保留干净的公司维护历史，并在这里保留上游致谢。
 
-- SuperAgent quota, usage summary, trend, estimated cost, settled cost, and token split.
-- SuperAgent model usage ranking for the selected time range.
-- GAC credits and whether each account has been reset today.
+## 功能概览
 
-## Build
+- 查看 SuperAgent 当日额度、剩余额度、调用次数、Token、预估费用和已结算费用。
+- 查看不同时间范围的模型调用排行：今日、近 7 天、近 30 天、全部。
+- 查看两个 GAC 账号的积分剩余量，并判断今天是否已经发起过重置。
+- 自动刷新用量数据，刷新间隔可选 5 / 15 / 30 分钟。
+- 支持 Sparkle 自动更新，发布包通过 GitHub Release 分发。
 
-```bash
-CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./build.sh
-open build/SuperAgentIsland.app
-```
+## 界面截图
 
-## Release
+### 岛屿概览
 
-```bash
-./release.sh
-```
+![SuperAgentIsland 岛屿概览](docs/images/island-overview.svg)
 
-`release.sh` creates:
+### 设置面板
 
-- `dist/SuperAgentIsland-<version>.dmg`
-- `dist/appcast.xml`
+![SuperAgentIsland 设置面板](docs/images/settings-general.svg)
 
-Sparkle auto-update reads the appcast from:
+## 安装
+
+1. 打开 [Releases](https://github.com/daodaolee/super-agent-island/releases)。
+2. 下载最新版本的 `SuperAgentIsland-<version>.dmg`。
+3. 打开 DMG，把 `SuperAgentIsland.app` 拖到 `Applications`。
+4. 第一次启动时，如果 macOS 提示来源确认，按公司内部安装规范允许打开。
+
+## 使用说明
+
+### 1. 缩小状态
+
+应用启动后会停留在菜单栏岛屿区域：
+
+- 左侧圆环：SuperAgent 今日剩余额度百分比。
+- 右侧圆环：GAC 总积分剩余百分比。
+- 圆环会跟随后台刷新结果自动更新。
+
+### 2. 悬停查看提示
+
+鼠标悬停到岛屿上后会变宽：
+
+- 左侧展示 `额度` 文案和剩余额度圆环。
+- 右侧展示积分圆环和 `积分` 文案。
+- 此状态只做快速提示，不会打开完整面板。
+
+### 3. 点击展开面板
+
+点击岛屿后进入完整面板，左右切换三个页面：
+
+1. **用量概览**：额度、趋势、调用次数、Token、预估费用、结算费用。
+2. **模型排行**：按当前时间范围展示用量最高的前 4 个模型。
+3. **GAC 积分**：展示两个账号剩余积分和今天是否已重置。
+
+按住 `Command` 点击岛屿，可以切换当前统计范围：今日 → 近 7 天 → 近 30 天 → 全部。
+
+### 4. 设置
+
+点击展开面板左下角的设置按钮，可以打开设置窗口。
+
+通用：
+
+- 开机自动启动。
+- 刷新间隔。
+- 自动检查更新。
+- 立即检查更新。
+
+显示：
+
+- 低功耗模式。开启后只在刷新时显示蓝色光效。
+
+账号：
+
+- SuperAgent Web 登录账号。
+- SuperAgent Web 登录密码。
+- 测试账号密码是否可用。
+- 手动刷新 SuperAgent 数据。
+
+## 自动更新
+
+应用使用 Sparkle 检查更新，更新源为：
 
 ```text
 https://github.com/daodaolee/super-agent-island/releases/latest/download/appcast.xml
 ```
 
-For users to receive updates, create a GitHub Release with tag `v<version>` and upload both generated files:
+如果还没有发布 GitHub Release，设置里的“立即检查”会显示中文提示，不会弹出 Sparkle 的英文错误窗。
+
+## 开发维护
+
+更多架构、数据结构、设置项和发布说明见 [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)。
+
+常用命令：
 
 ```bash
-gh release create v$(cat VERSION) dist/SuperAgentIsland-$(cat VERSION).dmg dist/appcast.xml --notes "SuperAgentIsland $(cat VERSION)"
+# 构建本地 App
+CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./build.sh
+
+# 打包 DMG 和 appcast
+CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./release.sh
+
+# 本地一键发布：构建、推送 main/tag、上传 GitHub Release 资产
+CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./scripts/publish-release.sh
 ```
 
-After GitHub CLI login, this can be done in one step:
+真实账号密码不提交到 git。发布构建会从本地配置读取并注入：
 
-```bash
-./scripts/publish-release.sh
+```text
+~/.super-agent-island/release-secrets.env
 ```
 
-## Repository
+模板见 [.release-secrets.env.example](.release-secrets.env.example)。
 
-```bash
-git clone https://github.com/daodaolee/super-agent-island.git
-cd super-agent-island
-```
+## AI 开发工作流
 
-See [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) for architecture, UI components, data structures, settings, and release notes for future AI-assisted development.
+收到新需求时先看 [WORKFLOW.md](WORKFLOW.md)。核心约定：
 
-## Attribution
-
-SuperAgentIsland started as an internal adaptation of
-[ericjypark/codex-island](https://github.com/ericjypark/codex-island). The
-current repository keeps a clean company-owned history while preserving that
-upstream credit here.
+- 小 bug / 文案 / 样式微调：直接改，跑构建和验收清单。
+- 新功能 / 新页面 / 新数据源：先写变更说明和 BDD 场景，再实现。
+- 每次 release 前按 [acceptance/checklist.md](acceptance/checklist.md) 做人工验收。
 
 ## License
 

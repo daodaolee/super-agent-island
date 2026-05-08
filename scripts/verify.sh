@@ -1,14 +1,15 @@
 #!/bin/bash
 # Build and smoke-launch the app for 1 second, then kill it.
-# Used after every commit to confirm the binary launches without crashing.
-# (CodexIsland is a forever-running background overlay, so we can't just `./binary`.)
+# Used after larger changes to confirm the binary launches without crashing.
+# (SuperAgentIsland is a forever-running background overlay, so we can't just
+# run the binary and wait for a normal exit.)
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-./build.sh
+CLANG_MODULE_CACHE_PATH="${CLANG_MODULE_CACHE_PATH:-/tmp/swift-module-cache}" ./build.sh
 
-BIN="./build/CodexIsland.app/Contents/MacOS/CodexIsland"
+BIN="./build/SuperAgentIsland.app/Contents/MacOS/SuperAgentIsland"
 "$BIN" >/dev/null 2>&1 &
 PID=$!
 sleep 1

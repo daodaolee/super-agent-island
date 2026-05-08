@@ -11,13 +11,30 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Need full history + tags so the release-notes step can diff
-          # against the previous tag. Default shallow checkout sees only HEAD.
-          fetch-depth: 0
 
       - name: Install create-dmg
         run: npm install --global create-dmg
+
+      - name: Stage local secrets
+        env:
+          SUPERAGENT_USERNAME: ${{ secrets.SUPERAGENT_USERNAME }}
+          SUPERAGENT_PASSWORD: ${{ secrets.SUPERAGENT_PASSWORD }}
+          GAC_ACCOUNT_1_EMAIL: ${{ secrets.GAC_ACCOUNT_1_EMAIL }}
+          GAC_ACCOUNT_1_PASSWORD: ${{ secrets.GAC_ACCOUNT_1_PASSWORD }}
+          GAC_ACCOUNT_2_EMAIL: ${{ secrets.GAC_ACCOUNT_2_EMAIL }}
+          GAC_ACCOUNT_2_PASSWORD: ${{ secrets.GAC_ACCOUNT_2_PASSWORD }}
+        run: |
+          SECRETS_FILE="$RUNNER_TEMP/release-secrets.env"
+          umask 077
+          {
+            printf 'SUPERAGENT_USERNAME=%q\n' "$SUPERAGENT_USERNAME"
+            printf 'SUPERAGENT_PASSWORD=%q\n' "$SUPERAGENT_PASSWORD"
+            printf 'GAC_ACCOUNT_1_EMAIL=%q\n' "$GAC_ACCOUNT_1_EMAIL"
+            printf 'GAC_ACCOUNT_1_PASSWORD=%q\n' "$GAC_ACCOUNT_1_PASSWORD"
+            printf 'GAC_ACCOUNT_2_EMAIL=%q\n' "$GAC_ACCOUNT_2_EMAIL"
+            printf 'GAC_ACCOUNT_2_PASSWORD=%q\n' "$GAC_ACCOUNT_2_PASSWORD"
+          } > "$SECRETS_FILE"
+          echo "SECRETS_FILE=$SECRETS_FILE" >> "$GITHUB_ENV"
 
       - name: Stage Sparkle private key
         env:
@@ -33,111 +50,28 @@ jobs:
           echo "SPARKLE_PRIVATE_KEY_PATH=$KEY_FILE" >> "$GITHUB_ENV"
 
       - name: Build DMG + sign appcast
-        run: ./release.sh
+        run: CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./release.sh
 
       - name: Compute checksum
         id: sha
-        run: echo "sha=$(shasum -a 256 dist/CodexIsland-*.dmg | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+        run: echo "sha=$(shasum -a 256 dist/SuperAgentIsland-*.dmg | awk '{print $1}')" >> "$GITHUB_OUTPUT"
 
-      # Build release notes from Conventional Commits between the previous
-      # tag and HEAD. Groups by feat / fix / perf / refactor / docs / chore
-      # and drops the boilerplate `chore(release): bump VERSION` commit
-      # since it has no user-facing meaning. Falls back to a flat list if
-      # this is the first tag in the repo.
-      - name: Build release notes
-        id: notes
+      - name: Create release notes
         run: |
-          set -euo pipefail
-          fetch_section() {
-            local pattern="$1"
-            git log "$RANGE" --no-merges --pretty=format:"%s|%h" \
-              | grep -E "$pattern" \
-              | grep -v 'chore(release): bump VERSION' \
-              || true
-          }
-          format_section() {
-            local heading="$1" pattern="$2" lines
-            lines=$(fetch_section "$pattern")
-            [ -z "$lines" ] && return
-            echo "### $heading"
-            echo
-            echo "$lines" | while IFS='|' read -r subj hash; do
-              echo "- ${subj} (\`${hash}\`)"
-            done
-            echo
-          }
-
-          PREV=$(git tag --sort=-v:refname | grep -v "^${GITHUB_REF_NAME}$" | head -1 || true)
-          if [ -n "$PREV" ]; then
-            RANGE="${PREV}..HEAD"
-            COMPARE_URL="https://github.com/${GITHUB_REPOSITORY}/compare/${PREV}...${GITHUB_REF_NAME}"
-          else
-            RANGE="HEAD"
-            COMPARE_URL="https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}"
-          fi
-
+          VERSION="${GITHUB_REF_NAME#v}"
           {
-            echo "## What's changed"
+            echo "## SuperAgentIsland ${VERSION}"
             echo
-            format_section "Features"          '^feat(\(|:)'
-            format_section "Fixes"             '^fix(\(|:)'
-            format_section "Performance"       '^perf(\(|:)'
-            format_section "Refactors"         '^refactor(\(|:)'
-            format_section "Docs"              '^docs(\(|:)'
-            format_section "Chores"            '^chore(\(|:)'
-            echo "**Full changelog:** ${COMPARE_URL}"
-            echo
-            echo "## Install"
-            echo
-            echo '```sh'
-            echo "brew install --cask ericjypark/tap/codexisland"
-            echo '```'
-            echo
-            echo "Existing installs auto-update via Sparkle — open the app and Check Now if you're impatient."
-            echo
-            echo "---"
+            echo "- DMG: SuperAgentIsland-${VERSION}.dmg"
+            echo "- Appcast: appcast.xml"
             echo
             echo "**SHA-256:** \`${{ steps.sha.outputs.sha }}\`"
-            echo
-            echo "⚠️ Unsigned build — Gatekeeper quarantine is stripped on first launch by the cask postflight; manual DMG users see the README."
           } > release_notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/CodexIsland-*.dmg
+            dist/SuperAgentIsland-*.dmg
             dist/appcast.xml
           body_path: release_notes.md
-
-      # Mirror the cask to ericjypark/homebrew-tap so users on the tap pick up
-      # the new version without anyone editing two repos. Requires a
-      # fine-grained PAT in HOMEBREW_TAP_TOKEN with `contents: write` on the
-      # homebrew-tap repo (the workflow's GITHUB_TOKEN can't cross repos).
-      - name: Sync cask to homebrew-tap
-        env:
-          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          VERSION: ${{ github.ref_name }}
-          SHA: ${{ steps.sha.outputs.sha }}
-        run: |
-          if [[ -z "${HOMEBREW_TAP_TOKEN:-}" ]]; then
-            echo "::warning::HOMEBREW_TAP_TOKEN not set — skipping tap sync. Cask in ericjypark/homebrew-tap will be stale until updated manually."
-            exit 0
-          fi
-          # Strip leading "v" from the tag to get the cask version
-          CASK_VERSION="${VERSION#v}"
-          TAP_DIR="$RUNNER_TEMP/tap"
-          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ericjypark/homebrew-tap.git" "$TAP_DIR"
-          cp Casks/codexisland.rb "$TAP_DIR/Casks/codexisland.rb"
-          # Drop in the freshly-built version + SHA
-          sed -i '' "s|version \"[0-9.]*\"|version \"$CASK_VERSION\"|" "$TAP_DIR/Casks/codexisland.rb"
-          sed -i '' "s|sha256 \"[a-f0-9]\{64\}\"|sha256 \"$SHA\"|" "$TAP_DIR/Casks/codexisland.rb"
-          cd "$TAP_DIR"
-          if git diff --quiet; then
-            echo "tap already up to date"
-            exit 0
-          fi
-          git config user.email "2019147551@yonsei.ac.kr"
-          git config user.name "ericjypark"
-          git commit -am "chore: bump codexisland to $CASK_VERSION"
-          git push origin main
