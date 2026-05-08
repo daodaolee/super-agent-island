@@ -481,14 +481,13 @@
 
       .screen-grid {
         display: grid;
-        grid-template-columns: 0.78fr 1.22fr;
-        gap: 16px;
+        grid-template-columns: 1fr;
+        gap: 18px;
       }
 
       .screen-panels {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
+        gap: 16px;
       }
 
       .screen-card {
@@ -499,6 +498,8 @@
 
       .screen-card.compact {
         align-self: start;
+        justify-self: center;
+        width: min(620px, 100%);
         background:
           linear-gradient(160deg, rgba(255, 255, 255, 0.04), transparent 42%),
           var(--surface);
@@ -509,20 +510,13 @@
         width: 100%;
       }
 
-      .panel-crop {
-        aspect-ratio: 4 / 5;
+      .panel-shot {
         background: var(--surface);
       }
 
-      .panel-crop img {
+      .panel-shot img {
         width: 100%;
-        height: 100%;
-        object-fit: cover;
       }
-
-      .panel-crop:nth-child(1) img { object-position: left center; }
-      .panel-crop:nth-child(2) img { object-position: center center; }
-      .panel-crop:nth-child(3) img { object-position: right center; }
 
       .screen-caption {
         position: absolute;
@@ -619,10 +613,6 @@
           grid-template-columns: 1fr;
         }
 
-        .screen-panels {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
         .section-head,
         .release-card,
         .footer-inner {
@@ -661,14 +651,6 @@
 
         .signal-meta {
           grid-column: 2;
-        }
-
-        .screen-panels {
-          grid-template-columns: 1fr;
-        }
-
-        .panel-crop {
-          aspect-ratio: 16 / 7;
         }
 
         .footer-links {
@@ -789,16 +771,16 @@
               <span class="screen-caption">收起状态</span>
             </div>
             <div class="screen-panels">
-              <div class="screen-card panel-crop">
-                <img src="images/island-expanded.png" alt="SuperAgentIsland 展开的额度面板" />
+              <div class="screen-card panel-shot">
+                <img src="images/island-panel-usage.png" alt="SuperAgentIsland 展开的额度面板" />
                 <span class="screen-caption">额度</span>
               </div>
-              <div class="screen-card panel-crop">
-                <img src="images/island-expanded.png" alt="SuperAgentIsland 展开的模型面板" />
+              <div class="screen-card panel-shot">
+                <img src="images/island-panel-models.png" alt="SuperAgentIsland 展开的模型面板" />
                 <span class="screen-caption">模型</span>
               </div>
-              <div class="screen-card panel-crop">
-                <img src="images/island-expanded.png" alt="SuperAgentIsland 展开的积分面板" />
+              <div class="screen-card panel-shot">
+                <img src="images/island-panel-credits.png" alt="SuperAgentIsland 展开的积分面板" />
                 <span class="screen-caption">积分</span>
               </div>
             </div>
