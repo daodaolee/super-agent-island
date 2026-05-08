@@ -28,6 +28,12 @@ SuperAgentIsland 是一个 macOS 菜单栏岛屿应用，用来查看内部 Supe
 
 ## 安装
 
+也可以先打开分享页查看功能和安装入口：
+
+```text
+https://daodaolee.github.io/super-agent-island/
+```
+
 1. 打开 [Releases](https://github.com/daodaolee/super-agent-island/releases)。
 2. 下载最新版本的 `SuperAgentIsland-<version>.dmg`。
 3. 打开 DMG，把 `SuperAgentIsland.app` 拖到 `Applications`。

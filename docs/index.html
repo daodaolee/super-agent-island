@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="SuperAgentIsland 是一个 macOS 菜单栏岛屿应用，用来查看 SuperAgent 用量、模型统计和 GAC 积分状态。"
+    />
+    <title>SuperAgentIsland</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --canvas: #07080a;
+        --surface: #0d0d0d;
+        --surface-elevated: #101111;
+        --surface-card: #121212;
+        --hairline: #242728;
+        --hairline-strong: rgba(255, 255, 255, 0.16);
+        --primary: #ffffff;
+        --primary-pressed: #e8e8e8;
+        --on-primary: #000000;
+        --ink: #f4f4f6;
+        --body: #cdcdcd;
+        --mute: #9c9c9d;
+        --ash: #6a6b6c;
+        --stone: #434345;
+        --accent-blue: #57c1ff;
+        --accent-blue-soft: rgba(87, 193, 255, 0.15);
+        --accent-red: #ff6161;
+        --accent-green: #59d499;
+        --accent-green-soft: rgba(89, 212, 153, 0.15);
+        --accent-yellow: #ffc533;
+        --stripe-start: #ff5757;
+        --stripe-end: #a1131a;
+        --radius-sm: 6px;
+        --radius-md: 8px;
+        --radius-lg: 10px;
+        --radius-xl: 16px;
+        --section: 96px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+        background: var(--canvas);
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--body);
+        font-family: Inter, "Inter Fallback", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-feature-settings: "calt", "kern", "liga", "ss03";
+        line-height: 1.6;
+        text-rendering: optimizeLegibility;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      .page {
+        min-height: 100vh;
+        overflow: hidden;
+      }
+
+      .stripe-band {
+        position: absolute;
+        inset: 0 0 auto;
+        height: 260px;
+        pointer-events: none;
+        opacity: 0.88;
+        background:
+          linear-gradient(112deg, transparent 0 13%, rgba(255, 87, 87, 0.92) 13% 17%, transparent 17% 100%),
+          linear-gradient(112deg, transparent 0 23%, rgba(191, 26, 32, 0.88) 23% 28%, transparent 28% 100%),
+          linear-gradient(112deg, transparent 0 34%, rgba(161, 19, 26, 0.72) 34% 39%, transparent 39% 100%);
+        -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.65) 44%, transparent 100%);
+        mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.65) 44%, transparent 100%);
+      }
+
+      .container {
+        width: min(1240px, calc(100vw - 48px));
+        margin: 0 auto;
+      }
+
+      .nav {
+        position: relative;
+        z-index: 2;
+        height: 64px;
+        border-bottom: 1px solid var(--hairline);
+        background: rgba(7, 8, 10, 0.84);
+      }
+
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 100%;
+        gap: 24px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-md);
+        background: var(--surface-elevated);
+      }
+
+      .brand-mark svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        color: var(--mute);
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+      }
+
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border-radius: var(--radius-md);
+        padding: 8px 16px;
+        border: 1px solid transparent;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+      }
+
+      .button-primary {
+        background: var(--primary);
+        color: var(--on-primary);
+      }
+
+      .button-primary:active {
+        background: var(--primary-pressed);
+      }
+
+      .button-secondary {
+        color: var(--ink);
+      }
+
+      .button-tertiary {
+        background: var(--surface-elevated);
+        border-color: var(--hairline);
+        color: var(--ink);
+      }
+
+      .hero {
+        position: relative;
+        z-index: 1;
+        padding: 96px 0 72px;
+      }
+
+      .hero-grid {
+        display: grid;
+        grid-template-columns: minmax(360px, 0.82fr) minmax(520px, 1.18fr);
+        align-items: center;
+        gap: 56px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 22px;
+        padding: 4px 10px;
+        border: 1px solid var(--hairline);
+        border-radius: 9999px;
+        background: var(--surface-elevated);
+        color: var(--mute);
+        font-size: 12px;
+        letter-spacing: 0.4px;
+      }
+
+      .eyebrow-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 9999px;
+        background: var(--accent-green);
+      }
+
+      h1 {
+        margin: 0;
+        max-width: 720px;
+        color: var(--ink);
+        font-size: clamp(40px, 5vw, 64px);
+        font-weight: 600;
+        letter-spacing: 0;
+        line-height: 1.1;
+        font-feature-settings: "calt", "kern", "ss02", "ss08";
+      }
+
+      .hero-copy {
+        margin: 24px 0 0;
+        max-width: 620px;
+        color: var(--body);
+        font-size: 18px;
+        line-height: 1.6;
+      }
+
+      .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 32px;
+      }
+
+      .keycap {
+        display: inline-flex;
+        min-width: 24px;
+        height: 22px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--hairline);
+        border-radius: 4px;
+        background: linear-gradient(180deg, #121212, #0d0d0d);
+        color: var(--body);
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      .hero-note {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        color: var(--ash);
+        font-size: 13px;
+        letter-spacing: 0.1px;
+      }
+
+      .hero-shot {
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-xl);
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .shot-titlebar {
+        display: flex;
+        height: 38px;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--hairline);
+        padding: 0 14px;
+        background: var(--surface-elevated);
+      }
+
+      .traffic {
+        display: flex;
+        gap: 7px;
+      }
+
+      .traffic span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      .traffic span:nth-child(1) { background: var(--accent-red); }
+      .traffic span:nth-child(2) { background: var(--accent-yellow); }
+      .traffic span:nth-child(3) { background: var(--accent-green); }
+
+      .titlebar-label {
+        color: var(--ash);
+        font-size: 12px;
+        letter-spacing: 0.4px;
+      }
+
+      .hero-shot img {
+        width: 100%;
+        background: var(--surface);
+      }
+
+      .section {
+        padding: var(--section) 0 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 32px;
+        margin-bottom: 28px;
+      }
+
+      .section h2 {
+        margin: 0;
+        color: var(--ink);
+        font-size: clamp(34px, 4vw, 56px);
+        font-weight: 500;
+        line-height: 1.17;
+        letter-spacing: 0.2px;
+      }
+
+      .section-lead {
+        max-width: 480px;
+        margin: 0;
+        color: var(--mute);
+        font-size: 16px;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      .feature-card {
+        min-height: 220px;
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        padding: 24px;
+      }
+
+      .feature-card:nth-child(2) {
+        background: var(--surface-elevated);
+      }
+
+      .icon-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 28px;
+      }
+
+      .app-icon {
+        display: grid;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-md);
+        background: var(--surface-card);
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      .app-icon.blue { color: var(--accent-blue); background: var(--accent-blue-soft); }
+      .app-icon.green { color: var(--accent-green); background: var(--accent-green-soft); }
+      .app-icon.yellow { color: var(--accent-yellow); }
+
+      .feature-card h3 {
+        margin: 0 0 8px;
+        color: var(--ink);
+        font-size: 20px;
+        font-weight: 500;
+        line-height: 1.4;
+        letter-spacing: 0.2px;
+      }
+
+      .feature-card p {
+        margin: 0;
+        color: var(--mute);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .showcase {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 16px;
+      }
+
+      .panel-card {
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-xl);
+        background: var(--surface);
+        overflow: hidden;
+      }
+
+      .panel-card img {
+        width: 100%;
+      }
+
+      .command-card {
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-xl);
+        background: var(--surface);
+        padding: 16px;
+      }
+
+      .command-search {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 44px;
+        margin-bottom: 10px;
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-md);
+        background: var(--surface-elevated);
+        padding: 0 14px;
+        color: var(--mute);
+        font-size: 14px;
+      }
+
+      .command-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 58px;
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+        color: var(--body);
+      }
+
+      .command-row.active {
+        background: var(--surface-card);
+        color: var(--ink);
+      }
+
+      .command-main {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .command-text {
+        min-width: 0;
+      }
+
+      .command-text strong {
+        display: block;
+        overflow: hidden;
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .command-text span {
+        display: block;
+        overflow: hidden;
+        color: var(--ash);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+
+      .step {
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        padding: 24px;
+      }
+
+      .step-number {
+        color: var(--ash);
+        font-size: 13px;
+        letter-spacing: 0.1px;
+      }
+
+      .step h3 {
+        margin: 18px 0 8px;
+        color: var(--ink);
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 1.4;
+      }
+
+      .step p {
+        margin: 0;
+        color: var(--mute);
+        font-size: 14px;
+      }
+
+      .download-band {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        gap: 24px;
+        border: 1px solid var(--hairline);
+        border-radius: var(--radius-xl);
+        background: var(--surface-elevated);
+        padding: 24px;
+      }
+
+      .download-band h2 {
+        font-size: 24px;
+        line-height: 1.6;
+      }
+
+      .download-band p {
+        margin: 0;
+        color: var(--mute);
+      }
+
+      footer {
+        margin-top: 96px;
+        border-top: 1px solid var(--hairline);
+        padding: 48px 0;
+        color: var(--ash);
+        font-size: 14px;
+      }
+
+      .footer-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 20px;
+      }
+
+      @media (max-width: 1024px) {
+        .hero-grid,
+        .showcase {
+          grid-template-columns: 1fr;
+        }
+
+        .feature-grid,
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        .section-head,
+        .download-band,
+        .footer-inner {
+          align-items: start;
+          grid-template-columns: 1fr;
+          flex-direction: column;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .container {
+          width: min(100% - 32px, 1240px);
+        }
+
+        .nav-links,
+        .button-secondary {
+          display: none;
+        }
+
+        .hero {
+          padding: 64px 0 48px;
+        }
+
+        .section {
+          padding-top: 64px;
+        }
+
+        .hero-actions {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .footer-links {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <div class="stripe-band" aria-hidden="true"></div>
+
+      <nav class="nav">
+        <div class="container nav-inner">
+          <a class="brand" href="#top" aria-label="SuperAgentIsland 首页">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M7 8.5 12 4l5 4.5v7L12 20l-5-4.5v-7Z" stroke="currentColor" stroke-width="1.6" />
+                <path d="M4 10.5h3M17 10.5h3M4 14h3M17 14h3" stroke="currentColor" stroke-width="1.6" />
+              </svg>
+            </span>
+            SuperAgentIsland
+          </a>
+          <div class="nav-links" aria-label="页面导航">
+            <a href="#features">功能</a>
+            <a href="#screens">界面</a>
+            <a href="#install">安装</a>
+          </div>
+          <div class="nav-actions">
+            <a class="button button-secondary" href="https://github.com/daodaolee/super-agent-island">GitHub</a>
+            <a class="button button-primary" href="https://github.com/daodaolee/super-agent-island/releases/latest/download/SuperAgentIsland-0.0.1.dmg">下载 App</a>
+          </div>
+        </div>
+      </nav>
+
+      <section class="hero" id="top">
+        <div class="container hero-grid">
+          <div>
+            <div class="eyebrow"><span class="eyebrow-dot"></span>macOS 菜单栏用量岛屿</div>
+            <h1>把 SuperAgent 用量和 GAC 积分放到刘海旁边。</h1>
+            <p class="hero-copy">
+              SuperAgentIsland 常驻在 macOS 菜单栏区域，打开即可查看额度、调用、Token、费用、模型排行和 GAC 重置状态。
+            </p>
+            <div class="hero-actions">
+              <a class="button button-tertiary" href="https://github.com/daodaolee/super-agent-island/releases/latest/download/SuperAgentIsland-0.0.1.dmg">下载最新版</a>
+              <a class="button button-tertiary" href="https://github.com/daodaolee/super-agent-island/releases">查看版本</a>
+            </div>
+            <div class="hero-note">
+              <span class="keycap">⌘</span>
+              <span>按住 Command 点击岛屿，切换今日 / 7 天 / 30 天 / 全部。</span>
+            </div>
+          </div>
+
+          <div class="hero-shot" aria-label="SuperAgentIsland 展开界面截图">
+            <div class="shot-titlebar">
+              <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+              <div class="titlebar-label">SuperAgentIsland</div>
+            </div>
+            <img src="images/island-expanded.png" alt="SuperAgentIsland 展开面板，展示额度、趋势、调用与 Token 信息" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="features">
+        <div class="container">
+          <div class="section-head">
+            <h2>给内部同事看的实时状态。</h2>
+            <p class="section-lead">所有信息围绕日常判断：今天还剩多少额度，模型调用是否异常，GAC 积分是否已经重置。</p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card">
+              <div class="icon-row">
+                <span class="app-icon blue">AI</span>
+                <span class="app-icon">%</span>
+              </div>
+              <h3>SuperAgent 用量概览</h3>
+              <p>展示额度、趋势、调用次数、Token、预估费用和已结算费用，自动按设置间隔刷新。</p>
+            </article>
+            <article class="feature-card">
+              <div class="icon-row">
+                <span class="app-icon green">4</span>
+                <span class="app-icon">M</span>
+              </div>
+              <h3>模型调用排行</h3>
+              <p>按今日、7 天、30 天和全部范围展示用量最高的模型，快速定位主要消耗来源。</p>
+            </article>
+            <article class="feature-card">
+              <div class="icon-row">
+                <span class="app-icon yellow">G</span>
+                <span class="app-icon">↻</span>
+              </div>
+              <h3>GAC 积分与重置</h3>
+              <p>展示两个账号的积分剩余，并判断当天是否已经发起过积分重置工单。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="screens">
+        <div class="container">
+          <div class="section-head">
+            <h2>像命令面板一样展开。</h2>
+            <p class="section-lead">缩小时只保留关键百分比，点击后展开完整面板，设置和刷新入口保持在低干扰位置。</p>
+          </div>
+          <div class="showcase">
+            <div class="panel-card">
+              <img src="images/island-compact.png" alt="SuperAgentIsland 缩小状态，左右显示两个圆环指标" />
+            </div>
+            <div class="command-card">
+              <div class="command-search">搜索或执行操作...</div>
+              <div class="command-row active">
+                <div class="command-main">
+                  <span class="app-icon blue">S</span>
+                  <div class="command-text">
+                    <strong>查看 SuperAgent 今日用量</strong>
+                    <span>额度、趋势、调用、Token、费用</span>
+                  </div>
+                </div>
+                <span class="keycap">⏎</span>
+              </div>
+              <div class="command-row">
+                <div class="command-main">
+                  <span class="app-icon green">M</span>
+                  <div class="command-text">
+                    <strong>切换模型排行范围</strong>
+                    <span>今日 / 7 天 / 30 天 / 全部</span>
+                  </div>
+                </div>
+                <span class="keycap">⌘</span>
+              </div>
+              <div class="command-row">
+                <div class="command-main">
+                  <span class="app-icon yellow">G</span>
+                  <div class="command-text">
+                    <strong>检查 GAC 积分状态</strong>
+                    <span>剩余积分和今日重置判断</span>
+                  </div>
+                </div>
+                <span class="keycap">R</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="install">
+        <div class="container">
+          <div class="section-head">
+            <h2>三步安装。</h2>
+            <p class="section-lead">同事只需要下载 DMG，把应用拖到 Applications，然后在设置里填写 SuperAgent Web 账号即可。</p>
+          </div>
+          <div class="steps">
+            <article class="step">
+              <div class="step-number">01</div>
+              <h3>下载 DMG</h3>
+              <p>从 GitHub Release 下载最新的 SuperAgentIsland 安装包。</p>
+            </article>
+            <article class="step">
+              <div class="step-number">02</div>
+              <h3>拖到 Applications</h3>
+              <p>打开 DMG 后把 App 拖入 Applications，按 macOS 提示允许运行。</p>
+            </article>
+            <article class="step">
+              <div class="step-number">03</div>
+              <h3>测试账号</h3>
+              <p>在账号设置里填写 SuperAgent Web 账号，点击测试确认可用。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container download-band">
+          <div>
+            <h2>准备安装 SuperAgentIsland。</h2>
+            <p>当前公开版本 v0.0.1，后续版本会通过 Sparkle 自动检查更新。</p>
+          </div>
+          <a class="button button-primary" href="https://github.com/daodaolee/super-agent-island/releases/latest/download/SuperAgentIsland-0.0.1.dmg">下载 macOS App</a>
+        </div>
+      </section>
+
+      <footer>
+        <div class="container footer-inner">
+          <span>SuperAgentIsland · 基于 codex-island 改造</span>
+          <div class="footer-links">
+            <a href="https://github.com/daodaolee/super-agent-island">GitHub</a>
+            <a href="https://github.com/daodaolee/super-agent-island/releases">Releases</a>
+            <a href="https://github.com/daodaolee/super-agent-island#使用说明">使用说明</a>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </body>
+</html>
