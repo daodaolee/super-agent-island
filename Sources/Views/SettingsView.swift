@@ -12,6 +12,7 @@ struct SettingsView: View {
     @ObservedObject private var lowPower = LowPowerModeStore.shared
     @ObservedObject private var superAgentCredentials = SuperAgentCredentialsStore.shared
     @ObservedObject private var superAgentUsage = SuperAgentUsageStore.shared
+    @ObservedObject private var feishuLogin = FeishuBrowserLogin.shared
     @ObservedObject private var updater = UpdaterController.shared
 
     @AppStorage("Settings.activeTab") private var activeTabRaw: String = SettingsTab.general.rawValue
@@ -252,44 +253,68 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 0) {
             sectionLabel("SuperAgent")
             SettingsRow(
-                title: "Web 登录账号",
-                subtitle: superAgentTestMessage ?? superAgentUsage.error ?? "用于读取配额摘要、使用概览和模型调用统计。",
+                title: "Web 登录",
+                subtitle: superAgentHeaderSubtitle,
                 dot: IslandColor.cobalt,
-                chip: superAgentCredentials.isConfigured ? "已配置" : nil
+                chip: superAgentCredentials.hasValidatedLogin ? "已登录" : nil
             ) {
-                VStack(alignment: .trailing, spacing: 6) {
-                    credentialField(
-                        placeholder: "账号",
-                        text: Binding(
-                            get: { superAgentCredentials.email },
-                            set: { superAgentCredentials.email = $0 }
-                        )
-                    )
-                    secureCredentialField(
-                        placeholder: "密码",
-                        text: Binding(
-                            get: { superAgentCredentials.password },
-                            set: { superAgentCredentials.password = $0 }
-                        )
-                    )
+                if superAgentCredentials.hasValidatedLogin {
+                    HStack(spacing: 8) {
+                        authMethodBadge
+                        logoutButton
+                    }
+                } else {
+                    authMethodSegmented
                 }
             }
-            SettingsRow(
-                title: "验证并刷新",
-                subtitle: "先测试账号密码是否可用；按住 Command 点击岛屿可切换时间范围。"
-            ) {
-                HStack(spacing: 6) {
-                    settingsButton(testingSuperAgent ? "测试中..." : "测试") {
-                        testSuperAgentAccount()
-                    }
-                    .disabled(testingSuperAgent)
-                    .opacity(testingSuperAgent ? 0.55 : 1)
 
-                    settingsButton(superAgentUsage.loading ? "刷新中..." : "刷新") {
-                        superAgentUsage.refresh()
+            if superAgentCredentials.hasValidatedLogin {
+                SettingsRow(
+                    title: "授权状态",
+                    subtitle: loggedInStatusText
+                ) {
+                    statusPill("已连接")
+                }
+            } else if superAgentCredentials.authMethod == .password {
+                SettingsRow(
+                    title: "账号密码",
+                    subtitle: "输入 SuperAgent Web 登录账号和密码。"
+                ) {
+                    HStack(spacing: 8) {
+                        VStack(alignment: .trailing, spacing: 6) {
+                            credentialField(
+                                placeholder: "账号",
+                                text: Binding(
+                                    get: { superAgentCredentials.email },
+                                    set: { superAgentCredentials.email = $0 }
+                                )
+                            )
+                            secureCredentialField(
+                                placeholder: "密码",
+                                text: Binding(
+                                    get: { superAgentCredentials.password },
+                                    set: { superAgentCredentials.password = $0 }
+                                )
+                            )
+                        }
+                        passwordLoginButton
                     }
-                    .disabled(superAgentUsage.loading)
-                    .opacity(superAgentUsage.loading ? 0.55 : 1)
+                }
+            } else {
+                SettingsRow(
+                    title: "飞书授权",
+                    subtitle: feishuStatusText
+                ) {
+                    feishuLoginButton
+                }
+            }
+
+            if superAgentCredentials.hasValidatedLogin {
+                SettingsRow(
+                    title: "数据刷新",
+                    subtitle: "按住 Command 点击岛屿可切换时间范围。"
+                ) {
+                    refreshButton
                 }
             }
         }
@@ -298,11 +323,158 @@ struct SettingsView: View {
         .padding(.bottom, 6)
     }
 
+    private var superAgentHeaderSubtitle: String {
+        if let message = superAgentTestMessage { return message }
+        if let error = superAgentUsage.error { return error }
+        if superAgentCredentials.hasValidatedLogin {
+            return "当前使用\(authMethodName)；退出登录后才可切换方式。"
+        }
+        return "选择一种登录方式。登录成功后会锁定当前方式。"
+    }
+
+    private var loggedInStatusText: String {
+        if superAgentCredentials.authMethod == .feishu, let message = feishuLogin.message {
+            return message
+        }
+        if let user = superAgentUsage.user {
+            return "已通过\(authMethodName)登录：\(user.username.isEmpty ? user.email : user.username)"
+        }
+        return "已通过\(authMethodName)登录，可刷新数据。"
+    }
+
+    private var feishuStatusText: String {
+        if feishuLogin.isLoggingIn { return "正在通过飞书登录..." }
+        if let message = feishuLogin.message { return message }
+        if superAgentCredentials.authMethod == .feishu, superAgentCredentials.isConfigured {
+            if let user = superAgentUsage.user {
+                return "已登录：\(user.username.isEmpty ? user.email : user.username)"
+            }
+            return "已登录（session 有效）"
+        }
+        return "点击下方按钮，通过飞书授权登录并保存 App 授权信息。"
+    }
+
+    private var authMethodName: String {
+        switch superAgentCredentials.authMethod {
+        case .password: return "密码登录"
+        case .feishu: return "飞书登录"
+        }
+    }
+
+    private var authMethodBadge: some View {
+        statusPill(authMethodName)
+    }
+
+    private var logoutButton: some View {
+        settingsButton("退出登录") {
+            superAgentCredentials.clearSession()
+            superAgentUsage.snapshot = nil
+            superAgentUsage.user = nil
+            superAgentUsage.error = nil
+            feishuLogin.clearMessage()
+            superAgentTestMessage = nil
+        }
+    }
+
+    private var authMethodSegmented: some View {
+        HStack(spacing: 0) {
+            authMethodButton("密码登录", method: .password)
+            authMethodButton("飞书登录", method: .feishu)
+        }
+        .padding(2)
+        .background {
+            RoundedRectangle(cornerRadius: 7)
+                .fill(.white.opacity(0.04))
+        }
+    }
+
+    @ViewBuilder
+    private func authMethodButton(_ title: String, method: SuperAgentAuthMethod) -> some View {
+        let isOn = (superAgentCredentials.authMethod == method)
+        Button {
+            superAgentCredentials.authMethod = method
+            superAgentTestMessage = nil
+            feishuLogin.clearMessage()
+        } label: {
+            Text(title)
+                .font(Typography.bodyNumber)
+                .foregroundStyle(isOn ? .white.opacity(0.95) : .white.opacity(0.55))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .frame(width: 72)
+                .padding(.vertical, 5)
+                .background {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(isOn ? .white.opacity(0.10) : .clear)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 5)
+                                .strokeBorder(.white.opacity(isOn ? 0.08 : 0), lineWidth: 0.5)
+                        }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var feishuLoginButton: some View {
+        Button {
+            startFeishuLogin()
+        } label: {
+            HStack(spacing: 6) {
+                if let logo = NSImage(contentsOfFile: Bundle.main.path(forResource: "feishu_logo", ofType: "png") ?? "") {
+                    Image(nsImage: logo)
+                        .resizable()
+                        .frame(width: 16, height: 16)
+                }
+                Text(feishuLogin.isLoggingIn ? "登录中..." : "飞书登录")
+                    .font(Typography.button)
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .frame(width: 118, height: 30)
+            .padding(.horizontal, 14)
+            .background {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(red: 0.2, green: 0.44, blue: 1.0).opacity(0.15))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color(red: 0.2, green: 0.44, blue: 1.0).opacity(0.4), lineWidth: 0.5)
+                    }
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(feishuLogin.isLoggingIn)
+        .opacity(feishuLogin.isLoggingIn ? 0.55 : 1)
+    }
+
+    private func startFeishuLogin() {
+        superAgentTestMessage = nil
+        feishuLogin.start()
+    }
+
+    private var passwordLoginButton: some View {
+        settingsButton(testingSuperAgent ? "登录中..." : "登录") {
+            testSuperAgentAccount()
+        }
+        .disabled(testingSuperAgent)
+        .opacity(testingSuperAgent ? 0.55 : 1)
+    }
+
+    private var refreshButton: some View {
+        settingsButton(superAgentUsage.loading ? "刷新中..." : "刷新") {
+            superAgentUsage.refresh()
+        }
+        .disabled(superAgentUsage.loading)
+        .opacity(superAgentUsage.loading ? 0.55 : 1)
+    }
+
     private func settingsButton(_ title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
                 .font(Typography.button)
                 .foregroundStyle(.white.opacity(0.9))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 5)
                 .background {
@@ -317,33 +489,94 @@ struct SettingsView: View {
         .buttonStyle(.plain)
     }
 
+    private func statusPill(_ title: String) -> some View {
+        Text(title)
+            .font(Typography.chip)
+            .tracking(0.8)
+            .foregroundStyle(.white.opacity(0.68))
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(.white.opacity(0.065))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(.white.opacity(0.08), lineWidth: 0.5)
+                    }
+            }
+    }
+
     private func testSuperAgentAccount() {
         guard !testingSuperAgent else { return }
         testingSuperAgent = true
-        superAgentTestMessage = "正在验证账号密码..."
+        let method = superAgentCredentials.authMethod
         let email = superAgentCredentials.email
         let password = superAgentCredentials.password
-        SuperAgentCredentialsStore.shared.clearSession()
-        Task.detached(priority: .utility) {
-            do {
-                let result = try await SuperAgentClient().fetchDashboard(
-                    email: email,
-                    password: password,
-                    range: .today
-                )
-                await MainActor.run {
-                    superAgentUsage.snapshot = result.0
-                    superAgentUsage.user = result.1
-                    superAgentUsage.lastUpdated = Date()
-                    superAgentUsage.error = nil
-                    superAgentTestMessage = "验证通过，账号可用。"
-                    testingSuperAgent = false
+
+        switch method {
+        case .password:
+            superAgentTestMessage = "正在验证账号密码..."
+            SuperAgentCredentialsStore.shared.clearSession()
+            Task.detached(priority: .utility) {
+                do {
+                    let result = try await SuperAgentClient().fetchDashboard(
+                        email: email,
+                        password: password,
+                        range: .today
+                    )
+                    await MainActor.run {
+                        superAgentUsage.snapshot = result.0
+                        superAgentUsage.user = result.1
+                        superAgentUsage.lastUpdated = Date()
+                        superAgentUsage.error = nil
+                        superAgentCredentials.markAuthenticated(method: .password)
+                        superAgentTestMessage = "验证通过，账号可用。"
+                        testingSuperAgent = false
+                    }
+                } catch {
+                    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    await MainActor.run {
+                        if let clientError = error as? SuperAgentClientError,
+                           case .sessionExpired = clientError {
+                            superAgentCredentials.clearSession()
+                            superAgentUsage.snapshot = nil
+                            superAgentUsage.user = nil
+                            feishuLogin.clearMessage()
+                        }
+                        superAgentTestMessage = "验证失败：\(message)"
+                        testingSuperAgent = false
+                    }
                 }
-            } catch {
-                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                await MainActor.run {
-                    superAgentTestMessage = "验证失败：\(message)"
-                    testingSuperAgent = false
+            }
+        case .feishu:
+            superAgentTestMessage = "正在验证飞书 session..."
+            Task.detached(priority: .utility) {
+                do {
+                    let result = try await SuperAgentClient().fetchDashboardWithSession(range: .today)
+                    await MainActor.run {
+                        superAgentUsage.snapshot = result.0
+                        superAgentUsage.user = result.1
+                        superAgentUsage.lastUpdated = Date()
+                        superAgentUsage.error = nil
+                        superAgentCredentials.markAuthenticated(method: .feishu)
+                        superAgentTestMessage = "验证通过，session 有效。"
+                        testingSuperAgent = false
+                    }
+                } catch {
+                    let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                    await MainActor.run {
+                        if let clientError = error as? SuperAgentClientError,
+                           case .sessionExpired = clientError {
+                            superAgentCredentials.clearSession()
+                            superAgentUsage.snapshot = nil
+                            superAgentUsage.user = nil
+                            feishuLogin.clearMessage()
+                        }
+                        superAgentTestMessage = "验证失败：\(message)"
+                        testingSuperAgent = false
+                    }
                 }
             }
         }

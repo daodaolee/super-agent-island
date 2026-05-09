@@ -56,8 +56,8 @@ if [[ -f "$RELEASE_SECRETS_FILE" ]]; then
   source "$RELEASE_SECRETS_FILE"
 fi
 
-SUPERAGENT_USERNAME="${SUPERAGENT_USERNAME:-}"
-SUPERAGENT_PASSWORD="${SUPERAGENT_PASSWORD:-}"
+SUPERAGENT_USERNAME=""
+SUPERAGENT_PASSWORD=""
 GAC_ACCOUNT_1_EMAIL="${GAC_ACCOUNT_1_EMAIL:-}"
 GAC_ACCOUNT_1_PASSWORD="${GAC_ACCOUNT_1_PASSWORD:-}"
 GAC_ACCOUNT_2_EMAIL="${GAC_ACCOUNT_2_EMAIL:-}"
@@ -79,6 +79,7 @@ EOF
 cp ./Resources/claude_logo.png "$RES_DIR/claude_logo.png"
 cp ./Resources/openai_logo.png "$RES_DIR/openai_logo.png"
 cp ./Resources/codexisland_logo.png "$RES_DIR/codexisland_logo.png"
+cp ./Resources/feishu_logo.png "$RES_DIR/feishu_logo.png"
 cp ./Resources/CodexIsland.icns "$RES_DIR/CodexIsland.icns"
 
 # Embed Sparkle.framework. -a preserves the symlinks inside Versions/.
@@ -102,6 +103,7 @@ for arch_pair in "arm64:$ARM64_BIN" "x86_64:$X86_64_BIN"; do
     -F "$SPARKLE_DIR" \
     -framework SwiftUI \
     -framework AppKit \
+    -framework WebKit \
     -framework ServiceManagement \
     -framework Security \
     -framework Sparkle \

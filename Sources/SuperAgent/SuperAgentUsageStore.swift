@@ -33,25 +33,40 @@ final class SuperAgentUsageStore: ObservableObject {
         error = nil
         refreshTask?.cancel()
         let activeRange = range
+        let method = credentials.authMethod
         let email = credentials.email
         let password = credentials.password
         refreshTask = Task.detached(priority: .utility) {
             do {
                 let client = SuperAgentClient()
-                let result = try await client.fetchDashboard(
-                    email: email,
-                    password: password,
-                    range: activeRange
-                )
+                let result: (SuperAgentDashboardSnapshot, SuperAgentUser?)
+                switch method {
+                case .password:
+                    result = try await client.fetchDashboard(
+                        email: email,
+                        password: password,
+                        range: activeRange
+                    )
+                case .feishu:
+                    result = try await client.fetchDashboardWithSession(range: activeRange)
+                }
                 await MainActor.run {
                     self.snapshot = result.0
                     self.user = result.1
                     self.lastUpdated = Date()
                     self.persistCookies()
+                    self.credentials.markAuthenticated(method: method)
                     self.loading = false
                 }
             } catch {
                 await MainActor.run {
+                    if method == .feishu,
+                       let clientError = error as? SuperAgentClientError,
+                       case .sessionExpired = clientError {
+                        self.credentials.clearSession()
+                        self.snapshot = nil
+                        self.user = nil
+                    }
                     self.error = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                     self.loading = false
                 }

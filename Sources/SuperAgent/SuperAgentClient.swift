@@ -10,6 +10,7 @@ enum SuperAgentClientError: LocalizedError {
     case callbackFailed(String)
     case apiFailed(String)
     case cryptoFailed
+    case sessionExpired
 
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,7 @@ enum SuperAgentClientError: LocalizedError {
         case .callbackFailed(let message): return message
         case .apiFailed(let message): return message
         case .cryptoFailed: return "密码加密失败。"
+        case .sessionExpired: return "飞书登录已过期，请在设置中重新登录。"
         }
     }
 }
@@ -56,6 +58,29 @@ struct SuperAgentClient {
         }
     }
 
+    /// Fetch dashboard using only existing session cookies (for Feishu OAuth flow).
+    /// Throws `sessionExpired` if the session is no longer valid.
+    func fetchDashboardWithSession(range: SuperAgentUsageRange) async throws -> (SuperAgentDashboardSnapshot, SuperAgentUser?) {
+        guard try await isAuthenticated() else {
+            throw SuperAgentClientError.sessionExpired
+        }
+        do {
+            return try await requestDashboard(range: range)
+        } catch {
+            if try await !isAuthenticated() {
+                throw SuperAgentClientError.sessionExpired
+            }
+            throw error
+        }
+    }
+
+    func validateSession() async throws -> SuperAgentUser? {
+        guard try await isAuthenticated() else {
+            throw SuperAgentClientError.sessionExpired
+        }
+        return try await requestCurrentUser()
+    }
+
     private func isAuthenticated() async throws -> Bool {
         var request = URLRequest(url: superAgentBase.appendingPathComponent("api/v1/auth/me"))
         request.httpMethod = "GET"
@@ -65,11 +90,8 @@ struct SuperAgentClient {
     }
 
     private func login(email: String, password: String) async throws {
-        let loginStart = superAgentBase.appendingPathComponent("api/v1/auth/login")
-        let (_, redirectResponse) = try await session.data(from: loginStart)
-        guard let authURL = redirectResponse.url,
-              authURL.host?.contains("casdoor-qa.fireflyfusion.cn") == true,
-              let oauth = OAuthRequest(url: authURL)
+        let authURL = try await requestOAuthLoginURL()
+        guard let oauth = OAuthRequest(url: authURL)
         else { throw SuperAgentClientError.loginRedirectMissing }
 
         let app = try await fetchCasdoorApp(oauth: oauth)
@@ -85,6 +107,15 @@ struct SuperAgentClient {
             encryptedPassword: encryptedPassword
         )
         try await completeCallback(code: code, state: oauth.state)
+    }
+
+    private func requestOAuthLoginURL() async throws -> URL {
+        let loginStart = superAgentBase.appendingPathComponent("api/v1/auth/login")
+        let (_, redirectResponse) = try await session.data(from: loginStart)
+        guard let authURL = redirectResponse.url,
+              authURL.host?.contains("casdoor-qa.fireflyfusion.cn") == true
+        else { throw SuperAgentClientError.loginRedirectMissing }
+        return authURL
     }
 
     private func fetchCasdoorApp(oauth: OAuthRequest) async throws -> CasdoorApp {

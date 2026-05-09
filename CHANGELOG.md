@@ -3,6 +3,29 @@
 User-facing changes per release. Dates are when the version is prepared for
 release.
 
+## [0.0.3] - 2026-05-09
+
+### Added
+
+- Added Feishu OAuth login for SuperAgent through an in-app WebKit login
+  window, with session validation before the login is marked successful.
+- Added runtime SuperAgent account setup so password login no longer depends on
+  release-time embedded credentials.
+
+### Changed
+
+- Redesigned the SuperAgent settings flow so password login and Feishu login are
+  mutually exclusive until the user logs out.
+- Replaced the password-mode test action with a login action and moved refresh
+  controls behind a successful login state.
+- Updated the release landing page and Homebrew cask metadata for the new
+  package version.
+
+### Internal
+
+- Removed SuperAgent build-secret injection from release builds while keeping
+  GAC release secrets unchanged.
+
 ## [0.0.2] - 2026-05-08
 
 ### Fixed
