@@ -1,8 +1,7 @@
 name: Release
 
 on:
-  push:
-    tags: ["v*"]
+  workflow_dispatch:
 
 jobs:
   release:
@@ -27,8 +26,6 @@ jobs:
           SECRETS_FILE="$RUNNER_TEMP/release-secrets.env"
           umask 077
           {
-            printf 'SUPERAGENT_USERNAME=%q\n' "$SUPERAGENT_USERNAME"
-            printf 'SUPERAGENT_PASSWORD=%q\n' "$SUPERAGENT_PASSWORD"
             printf 'GAC_ACCOUNT_1_EMAIL=%q\n' "$GAC_ACCOUNT_1_EMAIL"
             printf 'GAC_ACCOUNT_1_PASSWORD=%q\n' "$GAC_ACCOUNT_1_PASSWORD"
             printf 'GAC_ACCOUNT_2_EMAIL=%q\n' "$GAC_ACCOUNT_2_EMAIL"
