@@ -3,6 +3,22 @@
 User-facing changes per release. Dates are when the version is prepared for
 release.
 
+## [0.0.4] - 2026-06-08
+
+### Changed
+
+- Moved SuperAgent personal usage fetching from the QA Firefly Fusion host to
+  the production FireflyOps dashboard and API host.
+- Updated the Feishu OAuth login and cookie validation flow to accept the
+  production FireflyOps SuperAgent and auth domains.
+
+### Verified
+
+- Confirmed `https://superagentai.fireflyops.cn/dashboard` loads and production
+  `/api/v1` endpoints return authenticated-status responses.
+- Confirmed GAC credits balance and ticket endpoints still return HTTP 200 for
+  both embedded release accounts.
+
 ## [0.0.3] - 2026-05-09
 
 ### Added

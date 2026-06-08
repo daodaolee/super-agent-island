@@ -1,6 +1,6 @@
 cask "superagentisland" do
-  version "0.0.3"
-  sha256 "9e5d63e10e573abd0bc819c09b3c09388f3e2da1c26427011b06417570a9aa32"
+  version "0.0.4"
+  sha256 "378db22bed8666926ca4391edd01374e9b0f18fc781bbb6cd10453c7f2ab5536"
 
   url "https://github.com/daodaolee/super-agent-island/releases/download/v#{version}/SuperAgentIsland-#{version}.dmg"
   name "SuperAgentIsland"

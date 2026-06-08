@@ -11,7 +11,7 @@ final class FeishuLoginWindowController: NSWindowController, NSWindowDelegate {
     var onCancel: (() -> Void)?
     var onFailure: ((String) -> Void)?
 
-    private static let loginURL = URL(string: "https://superagentai-qa.fireflyfusion.cn/api/v1/auth/login")!
+    private static let loginURL = SuperAgentEndpoints.loginStartURL
 
     init(
         onComplete: (([HTTPCookie]) -> Void)? = nil,
@@ -61,8 +61,7 @@ final class FeishuLoginWindowController: NSWindowController, NSWindowDelegate {
         webView.configuration.websiteDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
             guard let self else { return }
             let relevant = cookies.filter { cookie in
-                cookie.domain.contains("superagentai-qa.fireflyfusion.cn") ||
-                    cookie.domain.contains(".fireflyfusion.cn")
+                SuperAgentEndpoints.isAcceptedCookieDomain(cookie.domain)
             }
             Task { @MainActor in
                 guard relevant.contains(where: { $0.name != "auth_state" }) else {
@@ -110,8 +109,8 @@ private final class FeishuNavDelegate: NSObject, WKNavigationDelegate {
         guard let url = webView.url else { return }
         let host = url.host ?? ""
         let path = url.path
-        if host == "superagentai-qa.fireflyfusion.cn",
-           path != "/api/v1/auth/login" {
+        if SuperAgentEndpoints.isAcceptedAppHost(host),
+           path != SuperAgentEndpoints.loginStartURL.path {
             Task { @MainActor in
                 self.controller?.completeIfAuthenticated()
             }

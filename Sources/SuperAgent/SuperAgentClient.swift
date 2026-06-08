@@ -27,8 +27,8 @@ enum SuperAgentClientError: LocalizedError {
 }
 
 struct SuperAgentClient {
-    private let superAgentBase = URL(string: "https://superagentai-qa.fireflyfusion.cn")!
-    private let casdoorBase = URL(string: "https://casdoor-qa.fireflyfusion.cn")!
+    private let superAgentBase = SuperAgentEndpoints.apiBase
+    private let casdoorBase = SuperAgentEndpoints.authBase
     private let session: URLSession
     private let decoder = JSONDecoder()
 
@@ -110,10 +110,10 @@ struct SuperAgentClient {
     }
 
     private func requestOAuthLoginURL() async throws -> URL {
-        let loginStart = superAgentBase.appendingPathComponent("api/v1/auth/login")
+        let loginStart = SuperAgentEndpoints.loginStartURL
         let (_, redirectResponse) = try await session.data(from: loginStart)
         guard let authURL = redirectResponse.url,
-              authURL.host?.contains("casdoor-qa.fireflyfusion.cn") == true
+              SuperAgentEndpoints.isAcceptedAuthHost(authURL.host)
         else { throw SuperAgentClientError.loginRedirectMissing }
         return authURL
     }

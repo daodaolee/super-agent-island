@@ -83,7 +83,7 @@ final class SuperAgentCredentialsStore: ObservableObject {
 
     func saveCookies(_ cookies: [HTTPCookie]) {
         let superAgentCookies = cookies.filter { cookie in
-            cookie.domain.contains("fireflyfusion.cn")
+            SuperAgentEndpoints.isAcceptedCookieDomain(cookie.domain)
         }
         guard !superAgentCookies.isEmpty else { return }
         let propsList = superAgentCookies.compactMap { cookie -> [String: Any]? in
