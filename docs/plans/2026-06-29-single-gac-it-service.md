@@ -22,10 +22,10 @@ And `GACCreditsStore` 只会刷新这一组账号。
 
 ### 场景：旧 secrets 平滑迁移
 
-Given 本机仍使用旧的 `GAC_ACCOUNT_1_EMAIL` 和 `GAC_ACCOUNT_1_PASSWORD`
+Given 本机仍使用旧的 `GAC_ACCOUNT_2_EMAIL` 和 `GAC_ACCOUNT_2_PASSWORD`
 When 没有配置新的 `GAC_IT_SERVICE_EMAIL` 和 `GAC_IT_SERVICE_PASSWORD`
-Then 构建脚本回退使用第一组旧变量
-And 第二组旧变量不会进入 `BuildSecrets.gacAccounts`。
+Then 构建脚本回退使用第二组旧变量中的 active it-service 账号
+And 第一组旧变量中的 retired it-service1 账号不会进入 `BuildSecrets.gacAccounts`。
 
 ### 场景：Credits 面板单账号居中
 

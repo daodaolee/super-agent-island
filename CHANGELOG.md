@@ -3,6 +3,21 @@
 User-facing changes per release. Dates are when the version is prepared for
 release.
 
+## [0.0.6] - 2026-06-29
+
+### Fixed
+
+- Fixed the GAC release-secret migration fallback so existing local secrets keep
+  the active it-service account instead of the retired it-service1 account.
+
+### Verified
+
+- Confirmed the generated `BuildSecrets.gacAccounts` contains the active
+  it-service account and does not contain the retired it-service1 account,
+  without printing secret values.
+- Built and packaged the app with
+  `CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./release.sh`.
+
 ## [0.0.5] - 2026-06-29
 
 ### Changed
