@@ -60,8 +60,8 @@ SUPERAGENT_USERNAME=""
 SUPERAGENT_PASSWORD=""
 GAC_ACCOUNT_1_EMAIL="${GAC_ACCOUNT_1_EMAIL:-}"
 GAC_ACCOUNT_1_PASSWORD="${GAC_ACCOUNT_1_PASSWORD:-}"
-GAC_ACCOUNT_2_EMAIL="${GAC_ACCOUNT_2_EMAIL:-}"
-GAC_ACCOUNT_2_PASSWORD="${GAC_ACCOUNT_2_PASSWORD:-}"
+GAC_IT_SERVICE_EMAIL="${GAC_IT_SERVICE_EMAIL:-$GAC_ACCOUNT_1_EMAIL}"
+GAC_IT_SERVICE_PASSWORD="${GAC_IT_SERVICE_PASSWORD:-$GAC_ACCOUNT_1_PASSWORD}"
 
 cat > "$DERIVED_SOURCES_DIR/BuildSecrets.swift" <<EOF
 import Foundation
@@ -70,8 +70,7 @@ enum BuildSecrets {
     static let superAgentUsername = $(swift_string_literal "$SUPERAGENT_USERNAME")
     static let superAgentPassword = $(swift_string_literal "$SUPERAGENT_PASSWORD")
     static let gacAccounts: [(email: String, password: String)] = [
-        (email: $(swift_string_literal "$GAC_ACCOUNT_1_EMAIL"), password: $(swift_string_literal "$GAC_ACCOUNT_1_PASSWORD")),
-        (email: $(swift_string_literal "$GAC_ACCOUNT_2_EMAIL"), password: $(swift_string_literal "$GAC_ACCOUNT_2_PASSWORD"))
+        (email: $(swift_string_literal "$GAC_IT_SERVICE_EMAIL"), password: $(swift_string_literal "$GAC_IT_SERVICE_PASSWORD"))
     ].filter { !\$0.email.isEmpty && !\$0.password.isEmpty }
 }
 EOF

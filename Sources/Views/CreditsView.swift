@@ -5,12 +5,9 @@ struct CreditsView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(Array(store.rows.enumerated()), id: \.element.id) { index, row in
-                CreditAccountBlock(
-                    row: row,
-                    color: index == 0 ? IslandColor.claude : IslandColor.codex
-                )
-                if index < store.rows.count - 1 {
+            ForEach(store.rows) { row in
+                CreditAccountBlock(row: row, color: IslandColor.claude)
+                if row.id != store.rows.last?.id {
                     Rectangle()
                         .fill(LinearGradient(
                             colors: [.clear, .white.opacity(0.06), .clear],

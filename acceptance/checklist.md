@@ -45,7 +45,8 @@ CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./release.sh
 
 ## 5. GAC 积分面板
 
-- [ ] 两个账号都能展示剩余 / 总量。
+- [ ] 只展示 it-service 一个账号，账号块在页面中居中。
+- [ ] it-service 能展示剩余 / 总量。
 - [ ] 只展示今天是否已重置，不展示工单详情。
 - [ ] 页面加载慢时有合理 loading 状态。
 - [ ] token 复用正常，不因手动刷新每次都重新登录。

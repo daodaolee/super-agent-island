@@ -8,7 +8,7 @@ SuperAgentIsland is a native SwiftUI macOS accessory app. It lives around the Ma
 
 1. `UsageView`: SuperAgent quota and usage overview.
 2. `ModelStatsView`: top model usage for the selected range.
-3. `CreditsView`: GAC credits for two embedded accounts.
+3. `CreditsView`: GAC credits for the single embedded it-service account.
 
 The app is intentionally manual-looking and compact. It should feel like an operational dashboard, not a marketing page.
 
@@ -63,14 +63,14 @@ Files:
 - `Sources/Credits/GACCredits.swift`
 - `Sources/Credits/GACCredentialsStore.swift`
 
-Embedded GAC accounts are also injected at build time from
+The embedded GAC it-service account is also injected at build time from
 `.release-secrets.env`.
 
 Passwords and session tokens do not use Keychain. Passwords are compiled into
 release builds from local release secrets; tokens are cached only in process
 memory.
 
-The third page shows only:
+The third page centers the single it-service account and shows only:
 
 - remaining / total credits
 - whether the account has been reset today

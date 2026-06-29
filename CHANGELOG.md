@@ -3,6 +3,23 @@
 User-facing changes per release. Dates are when the version is prepared for
 release.
 
+## [0.0.5] - 2026-06-29
+
+### Changed
+
+- Removed the retired second GAC account from release-time account injection.
+- Kept only the embedded it-service GAC account and centered the single credits
+  block in the GAC panel.
+- Updated release secrets documentation and acceptance checks for the single
+  GAC account setup.
+
+### Verified
+
+- Confirmed the generated `BuildSecrets.gacAccounts` contains one account tuple
+  without printing secret values.
+- Built the app with
+  `CLANG_MODULE_CACHE_PATH=/tmp/swift-module-cache ./build.sh`.
+
 ## [0.0.4] - 2026-06-08
 
 ### Changed
